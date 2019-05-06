@@ -9,6 +9,8 @@ https://developers.googleblog.com/2017/09/introducing-tensorflow-datasets.html
 
 https://www.tensorflow.org/guide/custom_estimators?hl=zh-cn#the_custom_estimator
 
+https://tensorflow.google.cn/tutorials/estimators/cnn#set_up_a_logging_hook
+
 http://d0evi1.com/tensorflow/estimators/
 
 https://www.jianshu.com/p/5495f87107e7
