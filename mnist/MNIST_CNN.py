@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 读取MNIST的tfrecords格式数据，然后利用cnn模型训练
+高级estimator最终会将loss，accuracy 和 global_step等等 输出到 ./cnn_classifer_dataset/
+可以调用tensorboard进行查看：tensorboard --logdir . --port 8889 --host 0.0.0.0
 """
 
 ##################### load packages ######################
@@ -83,33 +85,47 @@ def model_fn(features, labels, mode, params):
     # Classification output of the neural network.
     y_pred_cls = tf.argmax(y_pred, axis=1)
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    # Define the loss-function to be optimized, by first
+    # calculating the cross-entropy between the output of
+    # the neural network and the true labels for the input data.
+    # This gives the cross-entropy for each image in the batch.
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
+                                                                   logits=logits)
+
+    # Reduce the cross-entropy batch-tensor to a single number
+    # which can be used in optimization of the neural network.
+    loss = tf.reduce_mean(cross_entropy)
+
+
+    # classification accuracy.
+    accuracy = tf.metrics.accuracy(labels=labels,
+                                   predictions=y_pred_cls,
+                                   name='acc_op')  # 计算精度
+
+    metrics = {'accuracy': accuracy}  # 返回格式
+
+    tf.summary.scalar('accuracy', accuracy[1])  # 仅为了后面图表统计使用
+
+
+    if mode == tf.estimator.ModeKeys.EVAL:
         # If the estimator is supposed to be in prediction-mode
         # then use the predicted class-number that is output by
         # the neural network. Optimization etc. is not needed.
-        metrics = \
-            {
-                "accuracy": tf.metrics.accuracy(labels, y_pred_cls)
-            }
 
-        spec = tf.estimator.EstimatorSpec(mode=mode, predictions=y_pred_cls,
-                                          eval_metric_ops=metrics)
-    else:
-        # Otherwise the estimator is supposed to be in either
-        # training or evaluation-mode. Note that the loss-function
-        # is also required in Evaluation mode.
+        spec = tf.estimator.EstimatorSpec(
+            mode=mode,
+            loss=loss,
+            eval_metric_ops=metrics)
 
-        # Define the loss-function to be optimized, by first
-        # calculating the cross-entropy between the output of
-        # the neural network and the true labels for the input data.
-        # This gives the cross-entropy for each image in the batch.
-        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
-                                                                       logits=logits)
 
-        # Reduce the cross-entropy batch-tensor to a single number
-        # which can be used in optimization of the neural network.
-        loss = tf.reduce_mean(cross_entropy)
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        spec = tf.estimator.EstimatorSpec(
+            mode=mode,
+            predictions=y_pred_cls)
+        return spec
 
+
+    if mode == tf.estimator.ModeKeys.TRAIN:
         # Define the optimizer for improving the neural network.
         optimizer = tf.train.AdamOptimizer(learning_rate=params["learning_rate"])
 
@@ -117,21 +133,14 @@ def model_fn(features, labels, mode, params):
         train_op = optimizer.minimize(
             loss=loss, global_step=tf.train.get_global_step())
 
-        # Define the evaluation metrics,
-        # in this case the classification accuracy.
-        metrics = \
-        {
-            "accuracy": tf.metrics.accuracy(labels, y_pred_cls)
-        }
-
         # Wrap all of this in an EstimatorSpec.
         spec = tf.estimator.EstimatorSpec(
             mode=mode,
             loss=loss,
-            train_op=train_op,
-            eval_metric_ops=metrics)
+            train_op=train_op)
 
     return spec
+
 
 if __name__ == '__main__':
 
@@ -139,11 +148,11 @@ if __name__ == '__main__':
     model = tf.estimator.Estimator(model_fn=model_fn, params=params, model_dir="./cnn_classifer_dataset/")
 
     # Train the Model
-    input_fn = lambda: my_input_fn('train_img.tfrecords', 1, 256, tf.estimator.ModeKeys.TRAIN)
+    input_fn = lambda: my_input_fn('train_img.tfrecords', 5, 256, tf.estimator.ModeKeys.TRAIN)
     train_results = model.train(input_fn, steps=2000)
     print(train_results)
 
     # Test the Model
-    input_fn = lambda: my_input_fn('test_img.tfrecords', 1, 100, tf.estimator.ModeKeys.PREDICT)
+    input_fn = lambda: my_input_fn('test_img.tfrecords', 1, 100, tf.estimator.ModeKeys.EVAL)
     predictions = model.evaluate(input_fn=input_fn)
-    print('PREDICTIONS', predictions)
+    print('EVAL', predictions)
