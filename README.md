@@ -7,6 +7,8 @@ Tensorflow-Estimator使用
 
 https://developers.googleblog.com/2017/09/introducing-tensorflow-datasets.html
 
+https://www.tensorflow.org/guide/custom_estimators?hl=zh-cn#the_custom_estimator
+
 http://d0evi1.com/tensorflow/estimators/
 
 https://www.jianshu.com/p/5495f87107e7
