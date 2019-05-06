@@ -26,3 +26,4 @@ https://www.jianshu.com/p/516e882699cf
 
 https://github.com/tensorflow/models/tree/master/samples/outreach/blogs
 
+https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/tutorials/layers/cnn_mnist.py
