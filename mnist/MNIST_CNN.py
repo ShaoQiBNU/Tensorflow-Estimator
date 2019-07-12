@@ -21,7 +21,7 @@ def parse_data(example_proto):
     return image, label
 
 ##################### 输入数据流 ######################
-def my_input_fn(filenames, epochs, batch_size, mode=tf.estimator.ModeKeys.TRAIN,):
+def my_input_fn(filenames, epochs, batch_size, mode=tf.estimator.ModeKeys.TRAIN):
     dataset = tf.data.TFRecordDataset(filenames)
     dataset = dataset.map(parse_data)
 
